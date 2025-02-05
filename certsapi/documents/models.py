@@ -16,6 +16,7 @@ class TimestampMixin(models.Model):
 
 class Document(TimestampMixin):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='documents')
+    cert_id = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
     description =models.TextField()
     ipfs_cid = models.CharField(max_length=255, unique=True)  # Store the CID from IPFS

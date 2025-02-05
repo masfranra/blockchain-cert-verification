@@ -63,3 +63,31 @@ class RetrieveFromIPFS(GenericAPIView):
     
 
 
+
+class VerifyCertView(GenericAPIView):
+    permission_classes = [
+       AllowAny
+    ]
+
+    def post(self, request, *args, **kwargs):
+        cert_id = request.data
+        
+
+        try:
+            cert = Document.objects.filter(cert_id=cert_id)
+
+            message = (
+            "This certificate exists"
+            )
+            response_data = {
+                "message": message,
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Document.DoesNotExist:
+            message = (
+            "This certificate does not exists"
+            )
+            response_data = {
+                "message": message,
+            }
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
