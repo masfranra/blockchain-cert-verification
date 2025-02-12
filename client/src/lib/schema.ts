@@ -64,6 +64,16 @@ export const ForgotPasswordSchema = z.object({
   email: z.string().email(),
 });
 
+export const certificateUpLoadSchema = z.object({
+  
+  recipient_name: z.string(),
+  course_name: z.string(),
+  issued_by: z.string(),
+  duration_valid: z.string(),
+  
+});
+
+
 
 export enum AccountType {
   PERSONAL = "PERSONAL",

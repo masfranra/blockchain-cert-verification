@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { AUTHENTICATION_COOKIE } from "@/common/constants/auth-cookie";
 import authenticated from "./authenticated";
 
-const getHeaders = async () => {
+export const getHeaders = async () => {
     const cookieStore = await cookies(); // Resolve the Promise
     const isAuthenticated = await authenticated(); // Resolve the authenticated Promise
 

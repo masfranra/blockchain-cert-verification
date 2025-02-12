@@ -1,0 +1,32 @@
+Generate the certificate
+store it on ipfs
+store the ipfs_cid on blockchain
+make it available for download
+
+
+
+
+verification
+Provide a link for the QRcode on certificate
+link should contain the cert_id
+when scanned, the certificate details should be got from the database including its ipfs_cid
+check if that ipfs_cid exists in the blockchain
+if it exists return the certificate
+else return error message
+
+
+{
+    "email": "oscarekireh@gmail.com",
+    "password": "Footballstar10#
+}
+
+recipient_name=recipient_name,
+            course_name=course_name,
+            ipfs_cid=ipfs_cid,
+            issued_by=issued_by
+{
+    "recipient_name": "Akol Oscar",
+    "course_name": "Safety",
+    "ipfs_cid": "asdfgkkl",
+    "issued_by": "Inspector Africa"
+}

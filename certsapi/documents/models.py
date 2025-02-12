@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from accounts.models import User
 
@@ -15,15 +16,16 @@ class TimestampMixin(models.Model):
         abstract = True
 
 class Document(TimestampMixin):
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='documents')
-    cert_id = models.CharField(max_length=255)
-    title = models.CharField(max_length=255)
-    description =models.TextField()
-    ipfs_cid = models.CharField(max_length=255, unique=True)  # Store the CID from IPFS
+    cert_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)  # Unique certificate identifier
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='documents')
+    recipient_name = models.CharField(max_length=255)
+    course_name = models.CharField(max_length=255)
+    issued_by = models.CharField(max_length=255)  # Organization/Institution issuing the certificate
+    ipfs_cid = models.CharField(max_length=100, unique=True)  # IPFS CID of the certificate file
+    duration_valid = models.IntegerField(default=0)
+    blockchain_tx_hash = models.CharField(max_length=100, blank=True, null=True)  # Transaction hash for verification
+    verified = models.BooleanField(default=False)  # True if stored on blockchain
 
     def __str__(self):
-        """
-        Returns a string representation of the Document.
-        """
-        return f"{self.title} + {self.user}"
+        return f"{self.recipient_name} - {self.course_name} ({self.cert_id})"
 
