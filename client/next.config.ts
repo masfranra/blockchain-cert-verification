@@ -7,7 +7,8 @@ const nextConfig = {
   experimental: {
     serverActions: {
       allowedForwardedHosts: ['localhost'],
-      allowedOrigins: ['localhost:3030']
+      allowedOrigins: ['localhost:3030'],
+      bodySizeLimit: '10mb',
     },
   }
 };

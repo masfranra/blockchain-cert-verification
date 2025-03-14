@@ -65,13 +65,12 @@ export const ForgotPasswordSchema = z.object({
 });
 
 export const certificateUpLoadSchema = z.object({
-  
-  recipient_name: z.string(),
-  course_name: z.string(),
-  issued_by: z.string(),
-  duration_valid: z.string(),
-  
+  recipient_name: z.string().min(1, { message: "Recipient name is required" }),
+  course_name: z.string().min(1, { message: "Course name is required" }),
+  issued_by: z.string().min(1, { message: "Issued by is required" }),
+  duration_valid: z.string().min(1, { message: "Duration valid is required" }),
 });
+
 
 
 

@@ -21,9 +21,9 @@ class Document(TimestampMixin):
     recipient_name = models.CharField(max_length=255)
     course_name = models.CharField(max_length=255)
     issued_by = models.CharField(max_length=255)  # Organization/Institution issuing the certificate
-    ipfs_cid = models.CharField(max_length=100, unique=True)  # IPFS CID of the certificate file
+    ipfs_cid = models.CharField(max_length=255, unique=True)  # IPFS CID of the certificate file
     duration_valid = models.IntegerField(default=0)
-    blockchain_tx_hash = models.CharField(max_length=100, blank=True, null=True)  # Transaction hash for verification
+    ipfsUrl = models.CharField(max_length=255, unique=False, blank=True, null=True)
     verified = models.BooleanField(default=False)  # True if stored on blockchain
 
     def __str__(self):

@@ -34,6 +34,7 @@ export default function CreateForm() {
       const [error, setError] = useState<string | undefined>("");
       const [success, setSuccess] = useState("");
       const [isPending, startTransition] = useTransition();
+      const [imageFile, setImageFile] = useState<File>();
 
       const form = useForm<z.infer<typeof certificateUpLoadSchema>>({
           resolver: zodResolver(certificateUpLoadSchema),
@@ -46,6 +47,13 @@ export default function CreateForm() {
       });
 
 
+       // Handle Image File Selection
+      const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        setImageFile(file);
+      };
+
+
       // 2. Define a submit handler.
       async function onSubmit(values: z.infer<typeof certificateUpLoadSchema>) {
         setError("");
@@ -54,9 +62,20 @@ export default function CreateForm() {
         startTransition( async () => {
           
           // call the certificate create function
+
           try {
+            if(!imageFile) {
+              console.log("Image is being capture")
+              setError("Image is being capture")
+            }
+            
+            const createValues = {
+              ...values,
+              imageFile
+            }
+            console.log("createValues: ", createValues)
             // Step 1: Call API to generate the certificate
-            const certificateBlob = await createCertificate(values);
+            const certificateBlob = await createCertificate(createValues);
             
             // Handle errors if certificate creation fails
             if ("error" in certificateBlob) {
@@ -66,12 +85,23 @@ export default function CreateForm() {
             }
           
             // Step 2: Simulate IPFS upload and generate an IPFS CID
-            const ipfs_cid = "fjwhjfkjwfhwefffef"; // Replace with actual IPFS CID logic
-          
-            // Step 3: Prepare the updated values with IPFS CID
+             //upload to ipfs through pinata
+            const file = new File([certificateBlob], "certificate.pdf", { type: "application/pdf", lastModified: Date.now() });
+            const ipfsResponse = await ipfs_upload(file);
+            console.log("IPFS response: ", ipfsResponse?.ipfsUrl)
+            console.log("IPFS response: ", ipfsResponse?.upload.IpfsHash)
+            
+            const ipfs_cid = ipfsResponse?.upload.IpfsHash ?? ""
+            const ipfsUrl =  ipfsResponse?.ipfsUrl ?? ""
+
+            if (!ipfs_cid && !ipfsUrl){
+              setError("IPFS response error ")
+            }
+
             const updatedValues = {
               ...values,
-              ipfs_cid
+              ipfs_cid,
+              ipfsUrl
             };
           
             // Step 4: Upload to Backend
@@ -193,6 +223,10 @@ export default function CreateForm() {
                           />
                     
                     </div>
+                    <div className="mt-4">
+                  <FormLabel>Upload Image</FormLabel>
+                  <Input type="file" accept="" disabled={isPending} onChange={handleImageChange} />
+                </div>
 
 
                 </>

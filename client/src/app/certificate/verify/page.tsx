@@ -2,8 +2,10 @@
 
 import { useSearchParams } from "next/navigation";
 import { handleRetrieveHash } from "@/app/(dashboard)/dashboard/certificate/blockchainUpload";
+
 import {  useState } from "react";
 import { DBfetch } from "./verify";
+import PublicHeader from "@/components/common/public-header";
 
 const VerifyCertificate = async () => {
   const searchParams = useSearchParams();
@@ -12,15 +14,18 @@ const VerifyCertificate = async () => {
 
   const result = await DBfetch(code);
   console.log(result);
-  if (result['blockchain_verified']) {
-    // check if ipfs_cid is stored on blockchain
-    console.log("Blcokchain verification")
-    const hash_check = await handleRetrieveHash(result['cert_id']);
-  }
-  setVerifying("false")
+  // if (result['blockchain_verified']) {
+  //   // check if ipfs_cid is stored on blockchain
+  //   console.log("Blcokchain verification")
+  //   // const hash_check = await handleRetrieveHash(result['cert_id']);
+  // }
+  // setVerifying("false")
 
 
-  return <div>Certificate Code: {code}</div>;
+  return <div>
+    <PublicHeader />
+
+  </div>;
 };
 
 export default VerifyCertificate;

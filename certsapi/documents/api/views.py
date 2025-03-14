@@ -1,4 +1,5 @@
 import logging
+import qrcode
 from django.http import FileResponse
 from rest_framework.generics import (
     CreateAPIView,
@@ -16,8 +17,10 @@ from io import BytesIO
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
+from reportlab.lib.utils import ImageReader
 from django.http import HttpResponse
 from documents.ipfs_services import ipfs_cid_check
+from rest_framework.parsers import MultiPartParser, FormParser
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +39,7 @@ class UpLoadView(GenericAPIView):
         ipfs_cid = serializer.validated_data['ipfs_cid']
         issued_by = serializer.validated_data['issued_by']
         duration_valid = serializer.validated_data['duration_valid']
+        ipfsUrl = serializer.validated_data['ipfsUrl']
         user = request.user
 
         result = ipfs_cid_check(ipfs_cid)
@@ -52,7 +56,8 @@ class UpLoadView(GenericAPIView):
             course_name=course_name,
             ipfs_cid=ipfs_cid,
             issued_by=issued_by,
-            duration_valid=duration_valid
+            duration_valid=duration_valid,
+            ipfsUrl=ipfsUrl
         )
 
         response_data = {
@@ -90,6 +95,7 @@ class VerifyCertView(GenericAPIView):
                 "issued_by": certificate.issued_by,
                 "blockchain_verified": certificate.verified,
                 "ipfs_cid": certificate.ipfs_cid,
+                "ipfsUrl": certificate.ipfsUrl,
                 "cert_id": certificate.cert_id,
                 "message": message,
             }
@@ -110,11 +116,18 @@ class GenerateCertificateView(GenericAPIView):
     ]
 
     serializer_class = CreateCertificateSerializer
+    parser_classes = (MultiPartParser, FormParser)
         
     def post(self, request, *args, **kwargs):
+        print("Request Data:", request.data)  # Debugging line
+        print("Request Files:", request.FILES)
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         recipient_name = serializer.validated_data['recipient_name']
+        imageFile = serializer.validated_data['imageFile']
+
+        if not imageFile:
+            print("Image not uploaded")
        
 
         template_path = "certificates/template.pdf"  # Your PDF template
@@ -131,6 +144,24 @@ class GenerateCertificateView(GenericAPIView):
         c.setFillColorRGB(1, 1, 1)  # White color
         c.drawString(280, 268, recipient_name)  # Name
         # c.drawString(250, 450, f"Certificate ID: {cert_id}")  # Cert ID
+        if imageFile:
+            image_reader = ImageReader(imageFile)
+            c.drawImage(image_reader, 100, 500, width=100, height=100) 
+
+        # === Step 2: Generate QR Code ===
+        qr = qrcode.QRCode(box_size=5, border=2)
+        qr_data = f"https://verify.certificate.com/4"  # QR code points to verification URL
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+
+        qr_img = qr.make_image(fill="black", back_color="white")
+
+        qr_buffer = BytesIO()
+        qr_img.save(qr_buffer, format="PNG")
+        qr_reader = ImageReader(qr_buffer)
+        
+        # Add QR code image to the certificate
+        c.drawImage(qr_reader, 400, 100, width=80, height=80)
         c.save()
 
         overlay.seek(0)
