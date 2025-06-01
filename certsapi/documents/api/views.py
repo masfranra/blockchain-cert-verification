@@ -21,6 +21,11 @@ from reportlab.lib.utils import ImageReader
 from django.http import HttpResponse
 from documents.ipfs_services import ipfs_cid_check
 from rest_framework.parsers import MultiPartParser, FormParser
+import uuid
+from datetime import datetime
+
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,17 +45,27 @@ class UpLoadView(GenericAPIView):
         issued_by = serializer.validated_data['issued_by']
         duration_valid = serializer.validated_data['duration_valid']
         ipfsUrl = serializer.validated_data['ipfsUrl']
+        cert_id = serializer.validated_data['cert_id']
         user = request.user
-
-        result = ipfs_cid_check(ipfs_cid)
-        if result:
+        # check if cert_id exists
+        cert_id_exists = Document.objects.filter(cert_id=cert_id)
+        if cert_id_exists:
+            return Response (
+                {"error": "Certificate with this ID already exists"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        ipfs_cid_exists = Document.objects.filter(ipfs_cid=ipfs_cid)
+        if ipfs_cid_exists:
+            print("Yes")
             return Response(
             {"error": "This IPFS CID already exists."},
             status=status.HTTP_400_BAD_REQUEST
         )
+        print("No")
 
 
         document = Document.objects.create(
+            cert_id=cert_id,
             created_by=user,
             recipient_name=recipient_name,
             course_name=course_name,
@@ -58,6 +73,7 @@ class UpLoadView(GenericAPIView):
             issued_by=issued_by,
             duration_valid=duration_valid,
             ipfsUrl=ipfsUrl
+
         )
 
         response_data = {
@@ -86,6 +102,8 @@ class VerifyCertView(GenericAPIView):
             )
         try:
             certificate = Document.objects.get(cert_id=cert_id)
+            certificate.verified = True
+            certificate.save()
             message = (
             "This certificate exists in the database"
             )
@@ -125,6 +143,12 @@ class GenerateCertificateView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         recipient_name = serializer.validated_data['recipient_name']
         imageFile = serializer.validated_data['imageFile']
+        course_name = serializer.validated_data['course_name']
+        valid_for = serializer.validated_data['duration_valid']
+        today = datetime.today().strftime("%d %B %Y")
+
+
+        
 
         if not imageFile:
             print("Image not uploaded")
@@ -132,7 +156,7 @@ class GenerateCertificateView(GenericAPIView):
 
         template_path = "certificates/template.pdf"  # Your PDF template
         output = BytesIO()
-
+        print("Here")
         # Read the PDF template
         pdf_reader = PdfReader(template_path)
         pdf_writer = PdfWriter()
@@ -140,17 +164,26 @@ class GenerateCertificateView(GenericAPIView):
         # Create an overlay with dynamic text
         overlay = BytesIO()
         c = canvas.Canvas(overlay, pagesize=letter)
-        c.setFont("Helvetica", 20)
-        c.setFillColorRGB(1, 1, 1)  # White color
-        c.drawString(280, 268, recipient_name)  # Name
+        c.setFont("Helvetica", 25)
+        c.setFillColorRGB(0, 0, 0)  # White color
+        c.drawString(350, 275, recipient_name)  # Name
+        c.setFont("Helvetica-Bold" ,15)
+        c.drawString(405, 450, valid_for) 
+        c.setFont("Helvetica", 25)
+        c.setFillColorRGB(1, 0, 0)
+        c.drawString(350, 218, course_name) 
+        c.setFont("Helvetica", 15)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(230, 185, today)
         # c.drawString(250, 450, f"Certificate ID: {cert_id}")  # Cert ID
         if imageFile:
             image_reader = ImageReader(imageFile)
-            c.drawImage(image_reader, 100, 500, width=100, height=100) 
+            c.drawImage(image_reader, 350, 340, width=100, height=100) 
 
         # === Step 2: Generate QR Code ===
+        custom_uuid = uuid.uuid4()
         qr = qrcode.QRCode(box_size=5, border=2)
-        qr_data = f"https://verify.certificate.com/4"  # QR code points to verification URL
+        qr_data = f"https://localhost:3000/certificate/verify?code=${custom_uuid}"  # QR code points to verification URL
         qr.add_data(qr_data)
         qr.make(fit=True)
 
@@ -161,7 +194,7 @@ class GenerateCertificateView(GenericAPIView):
         qr_reader = ImageReader(qr_buffer)
         
         # Add QR code image to the certificate
-        c.drawImage(qr_reader, 400, 100, width=80, height=80)
+        c.drawImage(qr_reader, 70,390, width=80, height=80)
         c.save()
 
         overlay.seek(0)
@@ -179,4 +212,6 @@ class GenerateCertificateView(GenericAPIView):
 
         response = HttpResponse(output, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="certificate_new.pdf"'
+        response["X-Certificate-ID"] = str(custom_uuid)  # Include UUID in response header
+
         return response

@@ -75,11 +75,11 @@ export default function CreateForm() {
             }
             console.log("createValues: ", createValues)
             // Step 1: Call API to generate the certificate
-            const certificateBlob = await createCertificate(createValues);
-            
+            const { blob: certificateBlob, certId } = await createCertificate(createValues);
+            const cert_id = certId
             // Handle errors if certificate creation fails
-            if ("error" in certificateBlob) {
-              console.error("Error:", certificateBlob.error);
+            if (!certificateBlob) {
+              
               setError("Failed to generate certificate. Please try again.");
               return;
             }
@@ -101,7 +101,8 @@ export default function CreateForm() {
             const updatedValues = {
               ...values,
               ipfs_cid,
-              ipfsUrl
+              ipfsUrl,
+              cert_id
             };
           
             // Step 4: Upload to Backend
@@ -114,8 +115,8 @@ export default function CreateForm() {
             }
           
             // Step 5: Handle Blockchain interaction (store the hash)
-            const blockchainResponse = await handleStoreHash(documentResponse["documentId"], ipfs_cid);
-            console.log("Blockchain Response: ", blockchainResponse);
+            // const blockchainResponse = await handleStoreHash(documentResponse["documentId"], ipfs_cid);
+            // console.log("Blockchain Response: ", blockchainResponse);
           
             // Step 6: If all steps succeed, initiate the download
             

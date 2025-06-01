@@ -17,7 +17,7 @@ export const getHeaders = async () => {
 };
 
 export const post = async <T>(path: string, data: any) => {
-    // console.log("hitting ...", `${API_URL}/${path}`)
+    console.log("hitting ...", `${API_URL}/${path}`)
     const res = await fetch(`${API_URL}/${path}`, {
         method: "POST",
         headers: {"Content-Type": "application/json", ...(await getHeaders()) },

@@ -31,23 +31,23 @@ export const createCertificate = async (data: any) => {
         headers: await getHeaders(), // Do NOT set "Content-Type", browser will handle it
         body: formData
     });
-    
+    const certId = res.headers.get("X-Certificate-ID"); // ✅ Extract the UUID
     // const textResponse = await res.text()
-    console.log("Data passed: : ", data);
+    console.log("CertId : ", certId);
     // const parsedRes = await res.json();
-    const parsedRes = await res.blob();
-    console.log("debug: ", parsedRes)
+    const blob = await res.blob();
+    console.log("debug: ", blob)
 
     if(res.status === 400){
-        return {error: parsedRes}
+        return {error: blob}
     }
   
     if(!res.ok){
-        return {error: getErrorMessage(parsedRes)}
+        return {error: getErrorMessage(blob)}
     }
    
 
-    return parsedRes;
+    return {blob, certId};
 
 }
 

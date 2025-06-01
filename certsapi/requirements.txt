@@ -26,3 +26,6 @@ djangorestframework==3.12.1
 gunicorn==20.0.4
 django-cors-headers==3.6.0
 kombu==5.4.0
+pypdf2==3.0.1
+reportlab==4.0.9
+qrcode==8.0

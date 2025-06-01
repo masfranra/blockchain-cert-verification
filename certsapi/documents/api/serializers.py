@@ -10,6 +10,7 @@ class UploadSerializer(serializers.Serializer):
     issued_by = serializers.CharField(max_length=255)
     duration_valid = serializers.CharField(max_length=255)
     ipfsUrl = serializers.CharField(max_length=255)
+    cert_id = serializers.CharField(max_length=255)
 
     class Meta:
         model = Document
@@ -18,7 +19,8 @@ class UploadSerializer(serializers.Serializer):
             "course_name",
             "ipfs_cid",
             "issued_by",
-            "duration_valid"
+            "duration_valid",
+            "cert_id"
 
         ]
 
@@ -29,7 +31,7 @@ class CreateCertificateSerializer(serializers.Serializer):
     course_name = serializers.CharField(max_length=255)
     issued_by = serializers.CharField(max_length=255)
     duration_valid = serializers.CharField(max_length=255)
-    ipfsUrl = serializers.CharField(max_length=255)
+    # ipfsUrl = serializers.CharField(max_length=255)
 
     
 

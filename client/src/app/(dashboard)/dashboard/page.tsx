@@ -75,23 +75,8 @@ export default async function Dashboard() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-              <Card
-                className="sm:col-span-2"
-              >
-                <CardHeader className="pb-3">
-                  <CardTitle>Package</CardTitle>
-                  <CardDescription className="max-w-lg text-balance leading-relaxed">
-                   Display something
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter className="flex flex-col items-start gap-2">
-                  <div>
-                  Display something
-                  </div>
-                  <h2>Referral Link: </h2>
-                  
-                </CardFooter>
-              </Card>
+            
+              
               <Card>
                 <CardHeader className="pb-2">
                   <CardDescription>Actions</CardDescription>
