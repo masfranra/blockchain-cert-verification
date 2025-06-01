@@ -54,37 +54,8 @@ export default function DesktopSidebar(){
             Create a certificate
             
           </Link>
-          <Link
-            href="/certificate/verify"
-            className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary", {"bg-muted text-primary": pathname === "/dashboard/withdraw"})}
-          >
-            <ArrowUpRight className="h-4 w-4" />
-            Verify certificate
-          </Link>
-          {/* <Link
-            href="/dashboard/buy-airtime"
-            className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary", {"bg-muted text-primary": pathname === "/dashboard/buy-airtime"})}
-          >
-            <LineChart className="h-4 w-4" />
-            Buy airtime &amp; data
-          </Link> */}
-          {/* {loading ? <Skeleton /> : <>
-          {user?.package !== "NONE" && <Link
-            href={`/dashboard/network/${user?.id}`}
-            className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary", {"bg-muted text-primary": pathname === "/dashboard/network"})}
-          >
-            <Users className="h-4 w-4" />
-            My team
-          </Link>}
-          </>} */}
-          {/* <Link
-            href={`/dashboard/transfer`}
-            className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary", {"bg-muted text-primary": pathname === "/dashboard/network"})}
-          >
-            <Forward className="h-4 w-4" />
-            Transfer
-          </Link>
-           */}
+          
+         
         </nav>
       </div>
       
