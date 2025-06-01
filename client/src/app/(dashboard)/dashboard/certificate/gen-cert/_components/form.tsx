@@ -115,8 +115,8 @@ export default function CreateForm() {
             }
           
             // Step 5: Handle Blockchain interaction (store the hash)
-            // const blockchainResponse = await handleStoreHash(documentResponse["documentId"], ipfs_cid);
-            // console.log("Blockchain Response: ", blockchainResponse);
+            const blockchainResponse = await handleStoreHash(documentResponse["documentId"], ipfs_cid);
+            console.log("Blockchain Response: ", blockchainResponse);
           
             // Step 6: If all steps succeed, initiate the download
             
