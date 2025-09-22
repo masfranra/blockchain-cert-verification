@@ -3,9 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { AUTHENTICATION_COOKIE, AUTHENTICATION_REFRESH_COOKIE } from "@/common/constants/auth-cookie"
 import type { User } from "@/interface/user.interface"
+import type { DashboardStats, Certificate } from "@/interface/dashboard.interface"
 import { getUserConfig } from "@/lib/account"
+import { getDashboardStats, getRecentCertificates } from "@/lib/dashboard"
+import authenticated from "@/lib/authenticated"
 import { formatCurrency } from "@/lib/utils"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 import {
   Award,
   BarChart3,
@@ -24,67 +30,43 @@ import Link from "next/link"
 import DesktopSidebar from "./_components/desktop-sidebar"
 import RightHeader from "./_components/right-header"
 
-// Mock data for certificates
-const recentCertificates = [
-  {
-    id: "cert-1234",
-    recipient: "John Doe",
-    course: "Advanced Web Development",
-    issueDate: "2025-05-28T10:30:00",
-    status: "verified",
-    ipfsCid: "bafybei...",
-  },
-  {
-    id: "cert-1235",
-    recipient: "Jane Smith",
-    course: "Data Science Fundamentals",
-    issueDate: "2025-05-27T14:15:00",
-    status: "pending",
-    ipfsCid: "bafybei...",
-  },
-  {
-    id: "cert-1236",
-    recipient: "Michael Johnson",
-    course: "Blockchain Essentials",
-    issueDate: "2025-05-26T09:45:00",
-    status: "verified",
-    ipfsCid: "bafybei...",
-  },
-  {
-    id: "cert-1237",
-    recipient: "Emily Williams",
-    course: "UI/UX Design",
-    issueDate: "2025-05-25T16:20:00",
-    status: "verified",
-    ipfsCid: "bafybei...",
-  },
-  {
-    id: "cert-1238",
-    recipient: "Robert Brown",
-    course: "Cybersecurity Fundamentals",
-    issueDate: "2025-05-24T11:10:00",
-    status: "pending",
-    ipfsCid: "bafybei...",
-  },
-]
-
 export default async function Dashboard() {
+  // Check authentication first
+  const isAuth = await authenticated()
+  
+  if (!isAuth) {
+    redirect("/auth/login")
+  }
+
   const userConfig = await getUserConfig<User>()
   const app_host = process.env.APP_URL as string
   const formatter = formatCurrency(userConfig?.wallet?.currency! ?? "USD")
   
 
   if (!userConfig) {
-    return (
-      <div className="w-full flex justify-center items-center h-screen">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-2">Session Expired</h2>
-          <p className="text-gray-600 mb-4">Please refresh the browser to continue</p>
-          <Button>Refresh</Button>
-        </div>
-      </div>
-    )
+    // Clear cookies and redirect to login instead of showing session expired
+    const cookieStore = await cookies();
+    cookieStore.delete(AUTHENTICATION_COOKIE);
+    cookieStore.delete(AUTHENTICATION_REFRESH_COOKIE);
+    redirect("/auth/login")
   }
+
+  // Fetch dynamic dashboard data
+  const dashboardStats = await getDashboardStats()
+  const recentCertificatesData = await getRecentCertificates(5)
+  
+  // Use default values if API calls fail
+  const stats: DashboardStats = dashboardStats || {
+    total_certificates: 0,
+    verified_certificates: 0,
+    unique_recipients: 0,
+    this_month_certificates: 0,
+    this_month_growth: 0,
+    verification_rate: 0,
+    unique_courses: 0
+  }
+  
+  const recentCertificates: Certificate[] = recentCertificatesData?.certificates || []
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -105,8 +87,10 @@ export default async function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <CardDescription>Total Certificates</CardDescription>
-                    <CardTitle className="text-3xl">1,247</CardTitle>
-                    <p className="text-xs text-green-600">+12% from last month</p>
+                    <CardTitle className="text-3xl">{stats.total_certificates.toLocaleString()}</CardTitle>
+                    <p className="text-xs text-green-600">
+                      {stats.this_month_growth > 0 ? '+' : ''}{stats.this_month_growth}% from last month
+                    </p>
                   </div>
                   <div className="rounded-full bg-blue-100 p-3 text-blue-600">
                     <FileText className="h-6 w-6" />
@@ -120,8 +104,8 @@ export default async function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <CardDescription>Verified Certificates</CardDescription>
-                    <CardTitle className="text-3xl">986</CardTitle>
-                    <p className="text-xs text-green-600">98.5% verification rate</p>
+                    <CardTitle className="text-3xl">{stats.verified_certificates.toLocaleString()}</CardTitle>
+                    <p className="text-xs text-green-600">{stats.verification_rate}% verification rate</p>
                   </div>
                   <div className="rounded-full bg-green-100 p-3 text-green-600">
                     <Shield className="h-6 w-6" />
@@ -135,8 +119,8 @@ export default async function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <CardDescription>Recipients</CardDescription>
-                    <CardTitle className="text-3xl">892</CardTitle>
-                    <p className="text-xs text-blue-600">Across 24 courses</p>
+                    <CardTitle className="text-3xl">{stats.unique_recipients.toLocaleString()}</CardTitle>
+                    <p className="text-xs text-blue-600">Across {stats.unique_courses} courses</p>
                   </div>
                   <div className="rounded-full bg-purple-100 p-3 text-purple-600">
                     <Users className="h-6 w-6" />
@@ -150,8 +134,10 @@ export default async function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <CardDescription>This Month</CardDescription>
-                    <CardTitle className="text-3xl">156</CardTitle>
-                    <p className="text-xs text-green-600">+23% from last month</p>
+                    <CardTitle className="text-3xl">{stats.this_month_certificates.toLocaleString()}</CardTitle>
+                    <p className="text-xs text-green-600">
+                      {stats.this_month_growth > 0 ? '+' : ''}{stats.this_month_growth}% from last month
+                    </p>
                   </div>
                   <div className="rounded-full bg-orange-100 p-3 text-orange-600">
                     <BarChart3 className="h-6 w-6" />
@@ -268,40 +254,50 @@ export default async function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentCertificates.map((cert) => (
-                    <TableRow key={cert.id}>
-                      <TableCell className="font-mono text-xs">{cert.id}</TableCell>
-                      <TableCell>{cert.recipient}</TableCell>
-                      <TableCell>{cert.course}</TableCell>
-                      <TableCell>{new Date(cert.issueDate).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        {cert.status === "verified" ? (
-                          <Badge variant="success" className="bg-green-100 text-green-800 hover:bg-green-100">
-                            <CheckCheck className="mr-1 h-3 w-3" /> Verified
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-                            <Clock10Icon className="mr-1 h-3 w-3" /> Pending
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <EllipsisVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Download Certificate</DropdownMenuItem>
-                            <DropdownMenuItem>Verify on Blockchain</DropdownMenuItem>
-                            <DropdownMenuItem>Revoke Certificate</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {recentCertificates.length > 0 ? (
+                    recentCertificates.map((cert) => (
+                      <TableRow key={cert.id}>
+                        <TableCell className="font-mono text-xs">{cert.id}</TableCell>
+                        <TableCell>{cert.recipient}</TableCell>
+                        <TableCell>{cert.course}</TableCell>
+                        <TableCell>{new Date(cert.issue_date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {cert.status === "verified" ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                              <CheckCheck className="mr-1 h-3 w-3" /> Verified
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+                              <Clock10Icon className="mr-1 h-3 w-3" /> Pending
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <EllipsisVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>View Details</DropdownMenuItem>
+                              <DropdownMenuItem>Download Certificate</DropdownMenuItem>
+                              <DropdownMenuItem>Verify on Blockchain</DropdownMenuItem>
+                              <DropdownMenuItem>Revoke Certificate</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        <FileText className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                        <p>No certificates found</p>
+                        <p className="text-sm">Create your first certificate to get started</p>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -331,22 +327,36 @@ export default async function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[
-                    { icon: Award, text: "New certificate issued to Emily Williams", time: "10 minutes ago" },
-                    { icon: Shield, text: "Certificate #cert-1237 verified on blockchain", time: "1 hour ago" },
-                    { icon: FileText, text: "New template 'Professional Course' created", time: "3 hours ago" },
-                    { icon: Users, text: "Bulk import: 24 recipients added", time: "Yesterday" },
-                  ].map((activity, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="rounded-full bg-blue-50 p-1.5 text-blue-600">
-                        <activity.icon className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm">{activity.text}</p>
-                        <p className="text-xs text-gray-500">{activity.time}</p>
-                      </div>
+                  {recentCertificates.length > 0 ? (
+                    recentCertificates.slice(0, 4).map((cert, i) => {
+                      const timeAgo = new Date(cert.issue_date).toLocaleDateString()
+                      const isVerified = cert.status === 'verified'
+                      
+                      return (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className={`rounded-full p-1.5 ${isVerified ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}`}>
+                            {isVerified ? (
+                              <Shield className="h-4 w-4" />
+                            ) : (
+                              <Award className="h-4 w-4" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm">
+                              {isVerified ? 'Certificate verified' : 'New certificate issued'} for {cert.recipient}
+                            </p>
+                            <p className="text-xs text-gray-500">{timeAgo}</p>
+                          </div>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Clock10Icon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                      <p>No recent activity</p>
+                      <p className="text-sm">Activity will appear here when you start issuing certificates</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>

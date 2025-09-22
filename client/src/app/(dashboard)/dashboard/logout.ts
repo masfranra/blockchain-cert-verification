@@ -9,7 +9,8 @@ export const staticLogout = async () => {
 
 
 export default async function logout(){
-    (await cookies()).delete(AUTHENTICATION_COOKIE),
-    (await cookies()).delete(AUTHENTICATION_REFRESH_COOKIE)
+    const cookieStore = await cookies();
+    cookieStore.delete(AUTHENTICATION_COOKIE);
+    cookieStore.delete(AUTHENTICATION_REFRESH_COOKIE);
     redirect("/auth/login");
 }

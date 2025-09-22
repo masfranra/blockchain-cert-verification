@@ -28,7 +28,7 @@ export default function RootLayout({
   // const pathname = headersList.get("x-current-path") || "";
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       
       <body className={cn(
           "min-h-screen relative  font-sans antialiased bg-white dark:bg-gray-900 max-w-full",
@@ -39,6 +39,7 @@ export default function RootLayout({
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
+            storageKey="chain-certs-theme"
           >
           
             <Providers>

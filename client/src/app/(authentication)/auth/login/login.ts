@@ -37,26 +37,33 @@ export const login = async (data: z.infer<typeof LoginSchema>) => {
 
 
 const setAuthCookie = async ({refresh, access}: {refresh: string, access: string}) => {
+    const isProduction = process.env.NODE_ENV === 'production';
 
     if (access) {
         const cookieStore = await cookies(); // Use 'await' to resolve the Promise
+        const accessTokenExp = jwtDecode(access).exp!;
         cookieStore.set({
             name: AUTHENTICATION_COOKIE,
             value: access,
-            secure: true,
+            secure: isProduction, // Only secure in production
             httpOnly: true,
-            expires: new Date(jwtDecode(access).exp! * 1000),
+            sameSite: 'lax',
+            expires: new Date(accessTokenExp * 1000),
+            path: '/',
         });
     }
     
     if (refresh) {
         const cookieStore = await cookies(); // Use 'await' to resolve the Promise
+        const refreshTokenExp = jwtDecode(refresh).exp!;
         cookieStore.set({
             name: AUTHENTICATION_REFRESH_COOKIE,
             value: refresh,
-            secure: true,
+            secure: isProduction, // Only secure in production
             httpOnly: true,
-            expires: new Date(jwtDecode(refresh).exp! * 1000),
+            sameSite: 'lax',
+            expires: new Date(refreshTokenExp * 1000),
+            path: '/',
         });
     }
 

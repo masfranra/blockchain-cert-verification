@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.21;
 
 contract DocumentStorage {
     // Mapping to store document hashes
@@ -7,6 +7,9 @@ contract DocumentStorage {
 
     // Event to log when a document hash is stored
     event DocumentHashStored(string indexed documentId, string documentHash);
+
+    // Explicit constructor
+    constructor() {}
 
     // Function to store a document hash
     function storeDocumentHash(string memory documentId, string memory documentHash) public {
