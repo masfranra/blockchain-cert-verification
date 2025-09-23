@@ -100,12 +100,8 @@ WSGI_APPLICATION = 'certsapi.wsgi.application'
 
 DATABASES = {
     "default": {
-        "ENGINE": get_env_variable("SQL_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": get_env_variable("POSTGRES_DB", "sunrepo"),
-        "USER": get_env_variable("POSTGRES_USER", "postgres"),
-        "PASSWORD": get_env_variable("POSTGRES_PASSWORD", "some_password"),
-        "HOST": get_env_variable("PG_HOST", "localhost"),
-        "PORT": get_env_variable("PG_PORT", 5432),
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 

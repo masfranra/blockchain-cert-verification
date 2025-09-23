@@ -1,5 +1,7 @@
 import logging
 import qrcode
+import re
+import uuid
 from django.http import FileResponse
 from rest_framework.generics import (
     CreateAPIView,
@@ -22,7 +24,9 @@ from django.http import HttpResponse
 from documents.ipfs_services import ipfs_cid_check
 from rest_framework.parsers import MultiPartParser, FormParser
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
+from django.db.models import Count, Q
+from django.utils.timezone import now
 
 
 
@@ -100,6 +104,31 @@ class VerifyCertView(GenericAPIView):
         logger.info(
                 f"Request data {cert_id}"
             )
+        
+        # Clean the cert_id by removing any non-UUID characters
+        if cert_id:
+            # Remove any leading/trailing whitespace and non-alphanumeric characters except hyphens
+            cert_id = re.sub(r'[^a-fA-F0-9\-]', '', cert_id.strip())
+            
+            # Validate UUID format
+            try:
+                uuid.UUID(cert_id)
+            except (ValueError, TypeError):
+                message = "Invalid certificate ID format"
+                response_data = {
+                    "message": message,
+                    "error": "INVALID_UUID_FORMAT"
+                }
+                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not cert_id:
+            message = "Certificate ID is required"
+            response_data = {
+                "message": message,
+                "error": "MISSING_CERT_ID"
+            }
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+            
         try:
             certificate = Document.objects.get(cert_id=cert_id)
             certificate.verified = True
@@ -183,7 +212,7 @@ class GenerateCertificateView(GenericAPIView):
         # === Step 2: Generate QR Code ===
         custom_uuid = uuid.uuid4()
         qr = qrcode.QRCode(box_size=5, border=2)
-        qr_data = f"https://localhost:3000/certificate/verify?code=${custom_uuid}"  # QR code points to verification URL
+        qr_data = f"http://localhost:3000/certificate/verify?code=${custom_uuid}"  # QR code points to verification URL
         qr.add_data(qr_data)
         qr.make(fit=True)
 
@@ -215,3 +244,111 @@ class GenerateCertificateView(GenericAPIView):
         response["X-Certificate-ID"] = str(custom_uuid)  # Include UUID in response header
 
         return response
+
+
+class DashboardStatsView(GenericAPIView):
+    """
+    API view to get dashboard statistics for the authenticated user
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        
+        # Get all certificates created by this user
+        total_certificates = Document.objects.filter(created_by=user).count()
+        
+        # Get verified certificates count
+        verified_certificates = Document.objects.filter(
+            created_by=user, 
+            verified=True
+        ).count()
+        
+        # Get unique recipients count
+        unique_recipients = Document.objects.filter(
+            created_by=user
+        ).values('recipient_name').distinct().count()
+        
+        # Get this month's certificates
+        current_month_start = now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        this_month_certificates = Document.objects.filter(
+            created_by=user,
+            create_date__gte=current_month_start
+        ).count()
+        
+        # Get last month's certificates for comparison
+        last_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+        last_month_certificates = Document.objects.filter(
+            created_by=user,
+            create_date__gte=last_month_start,
+            create_date__lt=current_month_start
+        ).count()
+        
+        # Calculate growth percentage
+        this_month_growth = 0
+        if last_month_certificates > 0:
+            this_month_growth = ((this_month_certificates - last_month_certificates) / last_month_certificates) * 100
+        elif this_month_certificates > 0:
+            this_month_growth = 100
+            
+        # Calculate verification rate
+        verification_rate = 0
+        if total_certificates > 0:
+            verification_rate = (verified_certificates / total_certificates) * 100
+            
+        # Get unique course count
+        unique_courses = Document.objects.filter(
+            created_by=user
+        ).values('course_name').distinct().count()
+        
+        stats = {
+            'total_certificates': total_certificates,
+            'verified_certificates': verified_certificates,
+            'unique_recipients': unique_recipients,
+            'this_month_certificates': this_month_certificates,
+            'this_month_growth': round(this_month_growth, 1),
+            'verification_rate': round(verification_rate, 1),
+            'unique_courses': unique_courses
+        }
+        
+        return Response(stats, status=status.HTTP_200_OK)
+
+
+class RecentCertificatesView(GenericAPIView):
+    """
+    API view to get recent certificates for the authenticated user
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        limit = request.GET.get('limit', 5)
+        
+        try:
+            limit = int(limit)
+            if limit > 50:  # Prevent too large requests
+                limit = 50
+        except ValueError:
+            limit = 5
+            
+        recent_certificates = Document.objects.filter(
+            created_by=user
+        ).order_by('-create_date')[:limit]
+        
+        certificates_data = []
+        for cert in recent_certificates:
+            certificates_data.append({
+                'id': str(cert.cert_id),
+                'recipient': cert.recipient_name,
+                'course': cert.course_name,
+                'issued_by': cert.issued_by,
+                'issue_date': cert.create_date.isoformat(),
+                'status': 'verified' if cert.verified else 'pending',
+                'ipfs_cid': cert.ipfs_cid,
+                'ipfs_url': cert.ipfsUrl
+            })
+            
+        return Response({
+            'certificates': certificates_data,
+            'total_count': len(certificates_data)
+        }, status=status.HTTP_200_OK)

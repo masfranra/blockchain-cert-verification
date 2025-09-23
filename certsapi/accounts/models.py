@@ -143,7 +143,7 @@ class Profile(TimestampMixin, models.Model):
     """Model class to handle user profiles"""
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    email_verified = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=True)
     id_image = models.URLField(null=True, blank=True)
 
     def __str__(self):
