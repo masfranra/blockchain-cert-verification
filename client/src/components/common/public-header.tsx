@@ -15,8 +15,7 @@ export default function PublicHeader() {
 
   const navigation = [
     { name: "About", href: "/about" },
-    { name: "Features", href: "#features" },
-    { name: "Verify Certificate", href: "/verify" },
+    { name: "Features", href: "/features" },
     { name: "Contact", href: "/contact" },
   ]
 

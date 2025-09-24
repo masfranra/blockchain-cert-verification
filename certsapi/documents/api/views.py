@@ -174,7 +174,7 @@ class GenerateCertificateView(GenericAPIView):
         imageFile = serializer.validated_data['imageFile']
         course_name = serializer.validated_data['course_name']
         valid_for = serializer.validated_data['duration_valid']
-        today = datetime.today().strftime("%d %B %Y")
+        today = datetime.today().strftime("%d %b %Y")
 
 
         
