@@ -250,7 +250,6 @@ export default async function Dashboard() {
                     <TableHead>Course</TableHead>
                     <TableHead>Issue Date</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -272,21 +271,7 @@ export default async function Dashboard() {
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <EllipsisVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
-                              <DropdownMenuItem>Download Certificate</DropdownMenuItem>
-                              <DropdownMenuItem>Verify on Blockchain</DropdownMenuItem>
-                              <DropdownMenuItem>Revoke Certificate</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                        
                       </TableRow>
                     ))
                   ) : (

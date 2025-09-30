@@ -131,11 +131,23 @@ class VerifyCertView(GenericAPIView):
             
         try:
             certificate = Document.objects.get(cert_id=cert_id)
+            logger.info(f"Certificate found: {certificate.cert_id}")
+            
+            # Check if certificate has IPFS CID - if not, it wasn't stored on blockchain
+            if not certificate.ipfs_cid or certificate.ipfs_cid.strip() == "":
+                message = "Certificate verification failed - not stored on blockchain"
+                response_data = {
+                    "message": message,
+                    "error": "BLOCKCHAIN_STORAGE_FAILED",
+                    "details": "This certificate was not properly stored on the blockchain. IPFS CID is missing."
+                }
+                return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+
+            # Certificate exists and has IPFS CID - proceed with verification
             certificate.verified = True
             certificate.save()
-            message = (
-            "This certificate exists in the database"
-            )
+            
+            message = "Certificate successfully verified and stored on blockchain"
             response_data = {
                 "recipient": certificate.recipient_name,
                 "course": certificate.course_name,
